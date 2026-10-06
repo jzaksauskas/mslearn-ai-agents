@@ -7,3 +7,4 @@ azure-ai-projects==2.3.0
 openai<3
 mcp
 fastmcp
+black
