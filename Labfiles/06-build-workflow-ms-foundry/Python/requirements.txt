@@ -1,7 +1,6 @@
 python-dotenv
 azure-identity
-azure-ai-projects==2.3.0
-aiohttp
-# openai 3.x replaced httpx with httpx2, which breaks azure-ai-projects'
-# `import httpx`. Pinned until azure-ai-projects supports openai 3.
-openai<3
+# Microsoft Agent Framework replaces the deprecated Foundry portal "Workflows"
+# feature; agents are still defined/created in the Foundry portal, but the
+# orchestration (loops, conditions) now lives in this code.
+agent-framework-foundry
