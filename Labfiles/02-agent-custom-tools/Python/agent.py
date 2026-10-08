@@ -6,12 +6,20 @@ from dotenv import load_dotenv
 from azure.ai.projects import AIProjectClient
 from azure.identity import DefaultAzureCredential
 from azure.ai.projects.models import PromptAgentDefinition, FunctionTool
-from openai.types.responses.response_input_param import FunctionCallOutput, ResponseInputParam
-from functions import next_visible_event, calculate_observation_cost, generate_observation_report
+from openai.types.responses.response_input_param import (
+    FunctionCallOutput,
+    ResponseInputParam,
+)
+from functions import (
+    next_visible_event,
+    calculate_observation_cost,
+    generate_observation_report,
+)
 
-def main(): 
+
+def main():
     # Clear the console
-    os.system('cls' if os.name=='nt' else 'clear')
+    os.system("cls" if os.name == "nt" else "clear")
 
     # Load environment variables from .env file
     load_dotenv()
@@ -22,7 +30,9 @@ def main():
     # Connect to the project client
     with (
         DefaultAzureCredential() as credential,
-        AIProjectClient(endpoint=project_endpoint, credential=credential) as project_client,
+        AIProjectClient(
+            endpoint=project_endpoint, credential=credential
+        ) as project_client,
         project_client.get_openai_client() as openai_client,
     ):
         # Define the event function tool
@@ -41,7 +51,7 @@ def main():
                 "additionalProperties": False,
             },
             strict=True,
-        )        
+        )
 
         # Define the observation cost function tool
         cost_tool = FunctionTool(
@@ -67,7 +77,7 @@ def main():
                 "additionalProperties": False,
             },
             strict=True,
-        )       
+        )
 
         # Define the observation report generation function tool
         report_tool = FunctionTool(
@@ -99,9 +109,16 @@ def main():
                     "observer_name": {
                         "type": "string",
                         "description": "the name of the person who conducted the observation",
-                    },                   
+                    },
                 },
-                "required": ["event_name", "location", "telescope_tier", "hours", "priority", "observer_name"],
+                "required": [
+                    "event_name",
+                    "location",
+                    "telescope_tier",
+                    "hours",
+                    "priority",
+                    "observer_name",
+                ],
                 "additionalProperties": False,
             },
             strict=True,
@@ -112,19 +129,20 @@ def main():
             agent_name="astronomy-agent",
             definition=PromptAgentDefinition(
                 model=model_deployment,
-                instructions=
-                    """You are an astronomy observations assistant that helps users find 
+                instructions="""You are an astronomy observations assistant that helps users find 
                     information about astronomical events and calculate telescope rental costs. 
                     Use the available tools to assist users with their inquiries.""",
                 tools=[event_tool, cost_tool, report_tool],
             ),
         )
-        
+
         # Create a thread for the chat session
         conversation = openai_client.conversations.create()
 
         while True:
-            user_input = input("Enter a prompt for the astronomy agent. Use 'quit' to exit.\nUSER: ").strip()
+            user_input = input(
+                "Enter a prompt for the astronomy agent. Use 'quit' to exit.\nUSER: "
+            ).strip()
             if user_input.lower() == "quit":
                 print("Exiting chat.")
                 break
@@ -138,7 +156,9 @@ def main():
             # Retrieve the agent's response, which may include function calls
             response = openai_client.responses.create(
                 conversation=conversation.id,
-                extra_body={"agent_reference": {"name": agent.name, "type": "agent_reference"}},
+                extra_body={
+                    "agent_reference": {"name": agent.name, "type": "agent_reference"}
+                },
                 input=[],
             )
 
@@ -158,9 +178,13 @@ def main():
                         if item.name == "next_visible_event":
                             result = next_visible_event(**json.loads(item.arguments))
                         elif item.name == "calculate_observation_cost":
-                            result = calculate_observation_cost(**json.loads(item.arguments))
+                            result = calculate_observation_cost(
+                                **json.loads(item.arguments)
+                            )
                         elif item.name == "generate_observation_report":
-                            result = generate_observation_report(**json.loads(item.arguments))
+                            result = generate_observation_report(
+                                **json.loads(item.arguments)
+                            )
 
                         # The Responses API requires function output to be a string
                         if not isinstance(result, str):
@@ -178,7 +202,12 @@ def main():
                 response = openai_client.responses.create(
                     conversation=conversation.id,
                     input=input_list,
-                    extra_body={"agent_reference": {"name": agent.name, "type": "agent_reference"}},
+                    extra_body={
+                        "agent_reference": {
+                            "name": agent.name,
+                            "type": "agent_reference",
+                        }
+                    },
                 )
 
                 if response.status == "failed":
@@ -189,8 +218,11 @@ def main():
             print(f"AGENT: {response.output_text}")
 
         # Delete the agent when done
-        project_client.agents.delete_version(agent_name=agent.name, agent_version=agent.version)
+        project_client.agents.delete_version(
+            agent_name=agent.name, agent_version=agent.version
+        )
         print("Deleted agent.")
 
-if __name__ == '__main__': 
+
+if __name__ == "__main__":
     main()
